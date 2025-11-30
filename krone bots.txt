@@ -1,0 +1,107 @@
+----------------------------
+--  Bang TP + FOLLOW
+--  + HOTKEY CHAT SYSTEM
+----------------------------
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local TextChatService = game:GetService("TextChatService")
+
+
+-------------------------------------------------
+-- UNIVERSAL CHAT SENDER (works in all games)
+-------------------------------------------------
+local msg1 = "gg/sthu | free comgirls and nitro | krone was here uwu"
+local msg2 = "hi im krone now join gg/sthu"
+local msg3 = "/sthu | comgirls for free >.< | krone runs so crying lol"
+
+local function sendMessage(text)
+    -- 1. NEW CHAT SYSTEM
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local ok = pcall(function()
+            local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            if channel then
+                channel:SendAsync(text)
+            end
+        end)
+        if ok then return end
+    end
+
+    -- 2. LEGACY CHAT SYSTEM
+    local legacy = game.ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+    if legacy and legacy:FindFirstChild("SayMessageRequest") then
+        legacy.SayMessageRequest:FireServer(text, "All")
+        return
+    end
+
+    -- 3. CUSTOM CHAT REMOTES (fallback)
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("RemoteEvent") and v.Name:lower():find("chat") then
+            pcall(function()
+                v:FireServer(text)
+            end)
+        end
+    end
+end
+
+
+-------------------------------------------------
+-- HOTKEY LISTENER (PRESS G)
+-------------------------------------------------
+UIS.InputBegan:Connect(function(key, gpe)
+    if gpe then return end
+    if key.KeyCode == Enum.KeyCode.G then
+        sendMessage(msg1)
+        task.wait(0.7)
+        sendMessage(msg2)
+    end
+end)
+
+
+-------------------------------------------------
+-- RANDOM TELEPORT + FOLLOW LOOP
+-------------------------------------------------
+local function getRandomizedPlayers()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(list, p)
+        end
+    end
+    -- Shuffle
+    for i = #list, 2, -1 do
+        local j = math.random(1, i)
+        list[i], list[j] = list[j], list[i]
+    end
+    return list
+end
+
+
+while task.wait() do
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+
+    local shuffled = getRandomizedPlayers()
+
+    for _, target in ipairs(shuffled) do
+        if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local targetRoot = target.Character.HumanoidRootPart
+
+            -- Initial teleport
+            root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+
+            -- Follow for 2 seconds
+            local startTime = tick()
+            while tick() - startTime < 2 do
+                if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    local tr = target.Character.HumanoidRootPart
+                    root.CFrame = tr.CFrame * CFrame.new(0, 0, 3)
+                else
+                    break
+                end
+                task.wait(0.05)
+            end
+        end
+    end
+end
